@@ -44,10 +44,12 @@ recognized_name = "Unknown"
 
 def check_face(frame):
     global face_match
-    global recognized_name  
+    global recognized_name
     try:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = detector(gray)
+        gray = cv2.equalizeHist(gray)  # Enhance contrast in low-light conditions
+
+        faces = detector(gray, 1)  # Use 1 for upsampling for better accuracy
 
         if len(faces) > 0:
             for face in faces:
@@ -55,23 +57,21 @@ def check_face(frame):
                 face_descriptor = face_rec_model.compute_face_descriptor(frame, landmarks)
                 face_descriptor = np.array(face_descriptor)
 
+                # Compare embeddings with reference faces
                 face_match = False
-                recognized_name = "Unknown" 
+                recognized_name = "Unknown"
                 for name, reference_descriptor in reference_faces.items():
                     distance = np.linalg.norm(reference_descriptor - face_descriptor)
-                    if distance < 0.6:  
+                    if distance < 0.3:  # Lower threshold for more precision
                         face_match = True
-                        recognized_name = name  
+                        recognized_name = name
                         break
-                if face_match:
-                    break
         else:
             face_match = False
-            recognized_name = "Unknown"  
+            recognized_name = "Unknown"
     except Exception as e:
         face_match = False
-        recognized_name = "Error"  
-
+        recognized_name = "Error"
 try:
     while True:
         ret, frame = cap.read()  
